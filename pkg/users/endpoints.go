@@ -3,6 +3,8 @@ package users
 import (
 	"context"
 
+	"github.com/gokit/microservice/pkg/common"
+
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -30,6 +32,18 @@ func createUserEndpoint(service UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*CreateUserRequest)
 		_, err := service.CreateUser(ctx, req.FirstName, req.SecondName, req.Email, req.Password)
-		return EmptyResponse{}, err
+		if err != nil {
+			return checkForStandardError(err)
+		}
+
+		return EmptyResponse{}, nil
 	}
+}
+
+func checkForStandardError(err error) (interface{}, error) {
+	_, ok := err.(common.StandardError)
+	if ok {
+		return err, nil
+	}
+	return nil, err
 }

@@ -2,7 +2,8 @@ package users
 
 import (
 	"context"
-	"errors"
+
+	"github.com/gokit/microservice/pkg/common"
 
 	"github.com/go-kit/kit/log"
 
@@ -28,5 +29,5 @@ func NewUserService(repository UserRepository, logger log.Logger) UserService {
 func (service userService) CreateUser(ctx context.Context, email string, firstName string, secondName string, password string) (string, error) {
 	uuid, _ := uuid.NewV4()
 	id := uuid.String()
-	return id, errors.New("Something went wrong")
+	return id, common.NewStandardError("not_implemented", "The create user endpoint is not yet implemented")
 }

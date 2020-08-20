@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gokit/microservice/pkg/common"
+
 	httpTransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 )
@@ -20,6 +22,10 @@ func MapUsersPath(userService UserService, router *mux.Router) {
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	_, ok := response.(common.StandardError)
+	if ok {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 	return json.NewEncoder(w).Encode(response)
 }
 
