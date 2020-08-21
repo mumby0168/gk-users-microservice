@@ -11,6 +11,8 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, email string, firstName string, secondName string, password string) (string, error)
+	GetUser(ctx context.Context, ID string) (*User, error)
+	GetUsers(ctx context.Context) ([]User, error)
 }
 
 type userService struct {
@@ -25,9 +27,9 @@ func NewUserService(repository UserRepository, logger log.Logger) UserService {
 	}
 }
 
-func (service userService) CreateUser(ctx context.Context, email string, firstName string, secondName string, password string) (string, error) {
+func (s userService) CreateUser(ctx context.Context, email string, firstName string, secondName string, password string) (string, error) {
 
-	if service.repository.UserExists(ctx, email) {
+	if s.repository.UserExists(ctx, email) {
 		return "", common.NewStandardError("email_in_use", "The email supplied is in use")
 	}
 
@@ -37,7 +39,7 @@ func (service userService) CreateUser(ctx context.Context, email string, firstNa
 		return "", err
 	}
 
-	err = service.repository.CreateUser(ctx, user)
+	err = s.repository.CreateUser(ctx, user)
 
 	if err != nil {
 		return "", nil
@@ -46,4 +48,22 @@ func (service userService) CreateUser(ctx context.Context, email string, firstNa
 	fmt.Println("Created user with id:", user.ID)
 	return user.ID, nil
 
+}
+
+func (s userService) GetUser(ctx context.Context, ID string) (*User, error) {
+	user, err := s.repository.GetUser(ctx, ID)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s userService) GetUsers(ctx context.Context) ([]User, error) {
+	users, err := s.repository.GetUsers(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return *users, nil
 }

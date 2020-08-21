@@ -19,21 +19,54 @@ func MapUsersPath(userService UserService, router *mux.Router) {
 		decodeCreateUserRequest,
 		encodeResponse,
 	))
+
+	router.Methods("GET").Path("/users/{id}").Handler(httpTransport.NewServer(
+		userEndpoints.GetUser,
+		decodeGetUserRequest,
+		encodeResponse,
+	))
+
+	router.Methods("GET").Path("/users").Handler(httpTransport.NewServer(
+		userEndpoints.GetUsers,
+		decodeGetUsersRequest,
+		encodeResponse,
+	))
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	_, ok := response.(common.StandardError)
-	if ok {
-		w.WriteHeader(http.StatusBadRequest)
+func decodeGetUsersRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	return &getUsersRequest{}, nil
+}
+
+func decodeGetUserRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	vars := mux.Vars(r)
+
+	if id, ok := vars["id"]; ok {
+		return &getUserRequest{ID: id}, nil
 	}
-	return json.NewEncoder(w).Encode(response)
+
+	return nil, common.NewStandardError("bad_params", "The id parameter must be provided by the route")
 }
 
 func decodeCreateUserRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	req := &CreateUserRequest{}
+	req := &createUserRequest{}
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
 		return nil, err
 	}
 	return req, nil
+}
+
+func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+
+	errored, err := common.ErrorChecks(w, response)
+
+	if err != nil {
+		return err
+	}
+
+	if errored {
+		return nil
+	}
+
+	return common.WriteJson(w, response)
 }

@@ -3,6 +3,8 @@ package inmem
 import (
 	"context"
 
+	"github.com/gokit/microservice/pkg/common"
+
 	"github.com/gokit/microservice/pkg/users"
 )
 
@@ -30,4 +32,19 @@ func (r inMemoryUserRepository) UserExists(ctx context.Context, email string) bo
 	}
 
 	return false
+}
+
+func (r inMemoryUserRepository) GetUser(ctx context.Context, ID string) (users.User, error) {
+	if val, ok := r.users[ID]; ok {
+		return *val, nil
+	}
+	return users.User{}, common.NewNotFoundError("A user with identifier: " + ID + " is not in our records")
+}
+
+func (r inMemoryUserRepository) GetUsers(ctx context.Context) (*[]users.User, error) {
+	usrs := make([]users.User, 0, len(r.users))
+	for _, user := range r.users {
+		usrs = append(usrs, *user)
+	}
+	return &usrs, nil
 }

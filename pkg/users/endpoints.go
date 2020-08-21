@@ -10,40 +10,76 @@ import (
 
 type UserEndpoints struct {
 	CreateUser endpoint.Endpoint
-}
-
-type CreateUserRequest struct {
-	FirstName  string `json:="firstName"`
-	SecondName string `json:="secondName"`
-	Email      string `json:="email"`
-	Password   string `json:="password"`
-}
-
-type EmptyResponse struct {
+	GetUser    endpoint.Endpoint
+	GetUsers   endpoint.Endpoint
 }
 
 func NewUserEndpoints(service UserService) *UserEndpoints {
 	return &UserEndpoints{
 		CreateUser: createUserEndpoint(service),
+		GetUser:    createGetUserEndpoint(service),
+		GetUsers:   createGetUsersEndpoint(service),
+	}
+}
+
+func createGetUserEndpoint(service UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(*getUserRequest)
+		user, err := service.GetUser(ctx, req.ID)
+
+		if err != nil {
+			return checkForServiceErrors(err)
+		}
+
+		return userResponse{
+			FirstName:  user.FirstName,
+			SecondName: user.SecondName,
+			Email:      user.Email,
+		}, nil
+	}
+}
+
+func createGetUsersEndpoint(service UserService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		_ = request.(*getUsersRequest)
+		users, err := service.GetUsers(ctx)
+		if err != nil {
+			return checkForServiceErrors(err)
+		}
+
+		var usersDtos []userResponse
+
+		for _, user := range users {
+			usersDtos = append(usersDtos, userResponse{
+				FirstName:  user.FirstName,
+				SecondName: user.SecondName,
+				Email:      user.Email,
+			})
+		}
+
+		return usersDtos, nil
 	}
 }
 
 func createUserEndpoint(service UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*CreateUserRequest)
+		req := request.(*createUserRequest)
 		_, err := service.CreateUser(ctx, req.Email, req.FirstName, req.SecondName, req.Password)
 		if err != nil {
-			return checkForStandardError(err)
+			return checkForServiceErrors(err)
 		}
 
-		return EmptyResponse{}, nil
+		return emptyResponse{}, nil
 	}
 }
 
-func checkForStandardError(err error) (interface{}, error) {
-	_, ok := err.(common.StandardError)
-	if ok {
-		return err, nil
+func checkForServiceErrors(err error) (interface{}, error) {
+	switch t := err.(type) {
+	case common.NotFoundError:
+		return t, nil
+	case common.StandardError:
+		return t, nil
+	default:
+		return nil, err
 	}
-	return nil, err
 }
