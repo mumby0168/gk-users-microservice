@@ -5,5 +5,6 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user User) error
+	CreateUser(ctx context.Context, user *User) error
+	UserExists(ctx context.Context, email string) bool
 }

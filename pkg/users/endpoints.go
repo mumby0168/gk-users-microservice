@@ -31,7 +31,7 @@ func NewUserEndpoints(service UserService) *UserEndpoints {
 func createUserEndpoint(service UserService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*CreateUserRequest)
-		_, err := service.CreateUser(ctx, req.FirstName, req.SecondName, req.Email, req.Password)
+		_, err := service.CreateUser(ctx, req.Email, req.FirstName, req.SecondName, req.Password)
 		if err != nil {
 			return checkForStandardError(err)
 		}

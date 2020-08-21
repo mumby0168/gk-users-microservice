@@ -2,12 +2,11 @@ package users
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gokit/microservice/pkg/common"
 
 	"github.com/go-kit/kit/log"
-
-	"github.com/gofrs/uuid"
 )
 
 type UserService interface {
@@ -27,7 +26,24 @@ func NewUserService(repository UserRepository, logger log.Logger) UserService {
 }
 
 func (service userService) CreateUser(ctx context.Context, email string, firstName string, secondName string, password string) (string, error) {
-	uuid, _ := uuid.NewV4()
-	id := uuid.String()
-	return id, common.NewStandardError("not_implemented", "The create user endpoint is not yet implemented")
+
+	if service.repository.UserExists(ctx, email) {
+		return "", common.NewStandardError("email_in_use", "The email supplied is in use")
+	}
+
+	user, err := newUser(firstName, secondName, email, password)
+	if err != nil {
+		_ = fmt.Errorf("User creation failed: %v", err.Error())
+		return "", err
+	}
+
+	err = service.repository.CreateUser(ctx, user)
+
+	if err != nil {
+		return "", nil
+	}
+
+	fmt.Println("Created user with id:", user.ID)
+	return user.ID, nil
+
 }
